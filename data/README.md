@@ -7,4 +7,7 @@
    Copy the command from the page where you clicked "Generate credentials", it should look like this : 
     ```shell
     azcopy sync https://radiantearth.blob.core.windows.net/mlhub/ref_cloud_cover_detection_challenge_v1 . --recursive=true
-    ```
+    ```  
+
+You should have the following in your `data/` folder once all the files are downloaded :  
+<img src="../images/data_example.png" height="200px"/>

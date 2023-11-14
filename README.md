@@ -35,12 +35,5 @@ In many uses of multispectral satellite imagery, clouds obscure what we really c
 1. Run the notebook cell to confirm that your setup is correct.
     - <img src="images/vscode_verify_setup.png" width="800px"/>
 
-## Linux Specific
-- Add this to your `~/.bashrc`:  
-```
-export LD_LIBRARY_PATH=/home/user/micromamba/envs/gif-7005-project/lib/:$LD_LIBRARY_PATH
-```
-  - This is done to ensure that python uses libstdc++ from the conda environment. 
-
 # How To Download The Data
 1. See [appropriate README](data/README.md)

@@ -13,7 +13,7 @@ dependencies:
   - conda-forge::pytorch-lightning=2.1.0
   - conda-forge::tensorboard=2.15.1
   - conda-forge::torchmetrics=1.2.0
-  - conda-forge::pillow=10.1.0
+  - conda-forge::pillow=9.4
   - conda-forge::libstdcxx-ng=13.2.0
   - conda-forge::seaborn=0.13.0
   - pytorch::pytorch=2.1.0
