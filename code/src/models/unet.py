@@ -1,6 +1,9 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import pytorch_lightning as pl
+import torch.optim as optim
+import torchmetrics
 
 
 # MODÈLE UNET MAISON. LE UNET SE DIVISE EN TROIS PARTIES (DÉBUT, DOWN, UP).
@@ -78,14 +81,21 @@ class OutConv(nn.Module):
         return self.conv(x)
 
 
-# TOUTES LES COUCHES COMBINÉES DANS L'ORDRE
-class UNet(nn.Module):
-    def __init__(self, n_channels, n_classes, bilinear=True):
-        super(UNet, self).__init__()
+# Wrap de Unets
+class LightningUNet(pl.LightningModule):
+    def __init__(self, n_channels, n_classes, train_loader, val_loader=None, test_loader=None, bilinear=True,
+                 learning_rate=1e-3):
+        super(LightningUNet, self).__init__()
         self.n_channels = n_channels
         self.n_classes = n_classes
+        self.train_loader = train_loader
+        self.val_loader = val_loader
+        self.test_loader = test_loader
         self.bilinear = bilinear
+        self.learning_rate = learning_rate
+        self.jaccard_index = torchmetrics.JaccardIndex(num_classes=n_classes, task='binary')
 
+        # Architecture Unet
         self.inc = DoubleConv(n_channels, 64)
         self.down1 = Down(64, 128)
         self.down2 = Down(128, 256)
@@ -109,3 +119,62 @@ class UNet(nn.Module):
         x = self.up4(x, x1)
         logits = self.outc(x)
         return logits
+
+    def training_step(self, batch, batch_idx):
+        inputs, target = batch
+        target_for_loss = target.long()
+        output = self(inputs)
+
+        # Jaccard Index Computation
+        predicted_labels = torch.argmax(output, dim=1)
+        self.jaccard_index(predicted_labels, target)
+        self.log('train_jaccard', self.jaccard_index, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+
+        loss = nn.CrossEntropyLoss()(output, target_for_loss)
+        return loss
+
+    def validation_step(self, batch, batch_idx):
+        inputs, target = batch
+        target_for_loss = target.long()
+        output = self(inputs)
+
+        loss = F.cross_entropy(output, target_for_loss)
+
+        # Jaccard Index Computation
+        predicted_labels = torch.argmax(output, dim=1)
+        self.jaccard_index(predicted_labels, target)
+
+        # Log metrics
+        self.log('val_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+        self.log('val_jaccard', self.jaccard_index, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+        return loss
+
+    def test_step(self, batch, batch_idx):
+        inputs, target = batch
+        target_for_loss = target.long()
+        output = self(inputs)
+
+        loss = F.cross_entropy(output, target)
+
+        # Jaccard Index Computation
+        predicted_labels = torch.argmax(output, dim=1)
+        self.jaccard_index(predicted_labels, target_for_loss)
+
+        # Log metrics
+        self.log('test_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+        self.log('test_jaccard', self.jaccard_index, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+
+        return loss
+
+    def configure_optimizers(self):
+        optimizer = optim.Adam(self.parameters(), lr=self.learning_rate)
+        return optimizer
+
+    def train_dataloader(self):
+        return self.train_loader
+
+    def val_dataloader(self):
+        return self.val_loader if self.val_loader else None
+
+    def test_dataloader(self):
+        return self.test_loader if self.test_loader else None
