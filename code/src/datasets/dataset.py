@@ -3,6 +3,7 @@ import numpy as np
 from torch.utils.data import Dataset
 from PIL import Image
 from pathlib import Path
+from torchvision import tv_tensors
 
 
 class CloudCoverDataset(Dataset):
@@ -24,13 +25,14 @@ class CloudCoverDataset(Dataset):
         x_paths = self.X_paths[index]
         y_path = self.y_paths[index]
 
-        x = self.load_x(x_paths)
-        y = self.load_y(y_path)
+        x = tv_tensors.Image(torch.from_numpy(self.load_x(x_paths)))
+        y = tv_tensors.Mask(torch.from_numpy(self.load_y(y_path)))
 
         if self.transforms:
-            x, y = self.transforms(x, y)
+            sample = self.transforms({'image': x, 'mask': y})
+            x, y = sample['image'], sample['mask']
         
-        return torch.from_numpy(x), torch.from_numpy(y)
+        return x, y
         
     def load_x(self, x_paths: list[Path]) -> np.ndarray:
         """

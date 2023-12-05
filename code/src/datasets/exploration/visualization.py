@@ -10,19 +10,32 @@ def show_rgb_infrared_ground_truth(X: torch.Tensor, y: torch.Tensor, max_rows: i
         y: shape (batch, height, width)
     """
     nb_rows = min(max_rows, X.shape[0])
-    fig, axes = plt.subplots(nrows=nb_rows, ncols=3, figsize=(10, nb_rows*4))
+
+    _, axes = plt.subplots(nrows=nb_rows, ncols=3, figsize=(10, nb_rows*4))
+
     for i in range(nb_rows):
-        # Because X channels are Blue, Green, Red, Near infrared light by default
         X_rgb = torch.cat((X[i, 2, :, :].unsqueeze(0), X[i, 1, :, :].unsqueeze(0), X[i, 0, :, :].unsqueeze(0)),axis=0)
-        axes[i, 0].imshow(X_rgb.cpu().numpy().transpose(1, 2, 0))
-        axes[i, 0].set_title(f"RGB {i}")
-        axes[i, 0].axis('off')
-        axes[i, 1].imshow(X[i, 3, :, :].cpu().numpy())
-        axes[i, 1].set_title(f"Near infrared light {i}")
-        axes[i, 1].axis('off')
-        axes[i, 2].imshow(y[i].cpu().numpy())
-        axes[i, 2].set_title(f"Ground truth {i}")
-        axes[i, 2].axis('off')
+        
+        if nb_rows == 1:
+            ax_rgb = axes[0]
+            ax_nir = axes[1]
+            ax_gt = axes[2]
+        else:
+            ax_rgb = axes[i, 0]
+            ax_nir = axes[i, 1]
+            ax_gt = axes[i, 2]
+        
+        ax_rgb.imshow(X_rgb.cpu().numpy().transpose(1, 2, 0))
+        ax_rgb.set_title(f"RGB {i}")
+        ax_rgb.axis('off')
+
+        ax_nir.imshow(X[i, 3, :, :].cpu().numpy())
+        ax_nir.set_title(f"Near infrared light {i}")
+        ax_nir.axis('off')
+
+        ax_gt.imshow(y[i].cpu().numpy())
+        ax_gt.set_title(f"Ground truth {i}")
+        ax_gt.axis('off')
     plt.tight_layout()
     plt.show()
 
