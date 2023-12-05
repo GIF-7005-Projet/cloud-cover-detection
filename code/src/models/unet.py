@@ -123,13 +123,16 @@ class LightningUNet(pl.LightningModule):
 
         # Jaccard Index Computation
         predicted_labels = torch.argmax(output, dim=1)
+
+        loss = F.cross_entropy(output, target_for_loss)
+        self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+
         self.jaccard_index(predicted_labels, target)
         self.log('train_jaccard', self.jaccard_index, on_step=True, on_epoch=True, prog_bar=True, logger=True)
 
-        loss = F.cross_entropy(output, target_for_loss)
         return loss
 
-    def validation_step(self, batch, batch_idx):
+    def validation_step(self, batch, batch_idx, dataloader_idx=0):
         inputs, target = batch
         target_for_loss = target.long()
         output = self(inputs)
