@@ -83,14 +83,10 @@ class OutConv(nn.Module):
 
 # Wrap de Unets
 class LightningUNet(pl.LightningModule):
-    def __init__(self, n_channels, n_classes, train_loader, val_loader=None, test_loader=None, bilinear=True,
-                 learning_rate=1e-3):
+    def __init__(self, n_channels, n_classes, bilinear=True, learning_rate=1e-3):
         super(LightningUNet, self).__init__()
         self.n_channels = n_channels
         self.n_classes = n_classes
-        self.train_loader = train_loader
-        self.val_loader = val_loader
-        self.test_loader = test_loader
         self.bilinear = bilinear
         self.learning_rate = learning_rate
         self.jaccard_index = torchmetrics.JaccardIndex(num_classes=n_classes, task='binary')
@@ -130,7 +126,7 @@ class LightningUNet(pl.LightningModule):
         self.jaccard_index(predicted_labels, target)
         self.log('train_jaccard', self.jaccard_index, on_step=True, on_epoch=True, prog_bar=True, logger=True)
 
-        loss = nn.CrossEntropyLoss()(output, target_for_loss)
+        loss = F.cross_entropy(output, target_for_loss)
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -169,12 +165,3 @@ class LightningUNet(pl.LightningModule):
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), lr=self.learning_rate)
         return optimizer
-
-    def train_dataloader(self):
-        return self.train_loader
-
-    def val_dataloader(self):
-        return self.val_loader if self.val_loader else None
-
-    def test_dataloader(self):
-        return self.test_loader if self.test_loader else None
