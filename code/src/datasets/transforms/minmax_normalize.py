@@ -1,16 +1,30 @@
 import torch
+import torch.nn as nn
 
-class MinMaxNormalize():
+class MinMaxNormalize(nn.Module):
     def __init__(self, target_min: int, target_max: int):
+        super().__init__()
         self.target_min = target_min
         self.target_max = target_max
     
-    def __call__(self, sample: torch.Tensor) -> torch.Tensor:
+    def forward(self, sample: dict) -> torch.Tensor:
         """
-        Inputs: shape (batch, channels, height, width).
-        Outputs: shape (batch, channels, height, width) with values in the range [target_min, target_max].
+        Inputs: image : shape (channels, height, width) or (batch, channels, height, width).
+        Outputs: image : shape (channels, height, width) or (batch, channels, height, width) with values in the range [target_min, target_max].
         """
-        channel_mins = sample.min(dim=2, keepdim=True)[0].min(dim=3, keepdim=True)[0]
-        channel_maxs = sample.max(dim=2, keepdim=True)[0].max(dim=3, keepdim=True)[0]
+        img = sample['image']
 
-        return ((sample - channel_mins) / (channel_maxs - channel_mins)) * (self.target_max - self.target_min) + self.target_min
+        is_batched = len(img.shape) == 4
+
+        if not is_batched:
+            img = img.unsqueeze(0)
+        
+        channel_mins = img.min(dim=2, keepdim=True)[0].min(dim=3, keepdim=True)[0]
+        channel_maxs = img.max(dim=2, keepdim=True)[0].max(dim=3, keepdim=True)[0]
+
+        sample['image'] = ((img - channel_mins) / (channel_maxs - channel_mins)) * (self.target_max - self.target_min) + self.target_min
+        
+        if not is_batched:
+            sample['image'] = sample['image'].squeeze(0)
+
+        return sample
