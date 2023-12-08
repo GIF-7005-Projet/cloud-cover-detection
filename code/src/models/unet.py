@@ -89,7 +89,17 @@ class LightningUNet(pl.LightningModule):
         self.n_classes = n_classes
         self.bilinear = bilinear
         self.learning_rate = learning_rate
-        self.jaccard_index = torchmetrics.JaccardIndex(num_classes=n_classes, task='binary')
+
+        self.save_hyperparameters()
+
+        self.train_jaccard = torchmetrics.JaccardIndex(num_classes=n_classes, task='binary')
+        self.train_accuracy = torchmetrics.Accuracy(num_classes=n_classes, task='binary', average='macro')
+        
+        self.val_jaccard = torchmetrics.JaccardIndex(num_classes=n_classes, task='binary')
+        self.val_accuracy = torchmetrics.Accuracy(num_classes=n_classes, task='binary', average='macro')
+        
+        self.test_jaccard = torchmetrics.JaccardIndex(num_classes=n_classes, task='binary')
+        self.test_accuracy = torchmetrics.Accuracy(num_classes=n_classes, task='binary', average='macro')
 
         # Architecture Unet
         self.inc = DoubleConv(n_channels, 64)
@@ -118,52 +128,51 @@ class LightningUNet(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         inputs, target = batch
-        target_for_loss = target.long()
-        output = self(inputs)
+        y_hat = self(inputs)
+        predicted_labels = torch.argmax(y_hat, dim=1)
 
-        # Jaccard Index Computation
-        predicted_labels = torch.argmax(output, dim=1)
-
-        loss = F.cross_entropy(output, target_for_loss)
+        loss = self.compute_loss(y_hat, target)
         self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
 
-        self.jaccard_index(predicted_labels, target)
-        self.log('train_jaccard', self.jaccard_index, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+
+        self.train_jaccard(predicted_labels, target)
+        self.log('train_jaccard', self.train_jaccard, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+
+        self.train_accuracy(predicted_labels, target)
+        self.log('train_accuracy', self.train_accuracy, on_step=True, on_epoch=True, prog_bar=True, logger=True)
 
         return loss
+    
+    def compute_loss(self, y_hat, y):
+        return F.cross_entropy(y_hat, y)
 
     def validation_step(self, batch, batch_idx, dataloader_idx=0):
         inputs, target = batch
-        target_for_loss = target.long()
-        output = self(inputs)
+        y_hat = self(inputs)
+        predicted_labels = torch.argmax(y_hat, dim=1)
 
-        loss = F.cross_entropy(output, target_for_loss)
-
-        # Jaccard Index Computation
-        predicted_labels = torch.argmax(output, dim=1)
-        self.jaccard_index(predicted_labels, target)
-
-        # Log metrics
+        loss = self.compute_loss(y_hat, target)
         self.log('val_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
-        self.log('val_jaccard', self.jaccard_index, on_step=True, on_epoch=True, prog_bar=True, logger=True)
-        return loss
+
+        self.val_jaccard(predicted_labels, target)
+        self.log('val_jaccard', self.val_jaccard, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+
+        self.val_accuracy(predicted_labels, target)
+        self.log('val_accuracy', self.val_accuracy, on_step=True, on_epoch=True, prog_bar=True, logger=True)
 
     def test_step(self, batch, batch_idx):
         inputs, target = batch
-        target_for_loss = target.long()
-        output = self(inputs)
+        y_hat = self(inputs)
+        predicted_labels = torch.argmax(y_hat, dim=1)
 
-        loss = F.cross_entropy(output, target)
-
-        # Jaccard Index Computation
-        predicted_labels = torch.argmax(output, dim=1)
-        self.jaccard_index(predicted_labels, target_for_loss)
-
-        # Log metrics
+        loss = self.compute_loss(y_hat, target)
         self.log('test_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
-        self.log('test_jaccard', self.jaccard_index, on_step=True, on_epoch=True, prog_bar=True, logger=True)
 
-        return loss
+        self.test_jaccard(predicted_labels, target)
+        self.log('test_jaccard', self.test_jaccard, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+
+        self.test_accuracy(predicted_labels, target)
+        self.log('test_accuracy', self.test_accuracy, on_step=True, on_epoch=True, prog_bar=True, logger=True)
 
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), lr=self.learning_rate)
