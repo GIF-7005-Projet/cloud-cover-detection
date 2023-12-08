@@ -26,7 +26,7 @@ class CloudCoverDataset(Dataset):
         y_path = self.y_paths[index]
 
         x = tv_tensors.Image(torch.from_numpy(self.load_x(x_paths)))
-        y = tv_tensors.Mask(torch.from_numpy(self.load_y(y_path)))
+        y = tv_tensors.Mask(torch.from_numpy(self.load_y(y_path)), dtype=torch.int64)
 
         if self.transforms:
             sample = self.transforms({'image': x, 'mask': y})
