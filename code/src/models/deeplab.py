@@ -5,7 +5,6 @@ from torchvision import models
 import pytorch_lightning as pl
 import torch.optim as optim
 import torchmetrics
-from src.models.unet import LightningUNet
 
 
 # MODELE DEEPLAB
@@ -24,21 +23,48 @@ class ASPP(nn.Module):
 
     def forward(self, x):
         aspp_outputs = [block(x) for block in self.aspp_blocks]
+
         x = torch.cat(aspp_outputs, dim=1)
+
         x = self.output_conv(x)
+
         return x
 
+# Cette fonction vise à adapter le modèle Resnet pour 4 channels
+def modify_resnet4channel(in_channels=4):
+    model = models.resnet50(pretrained=True)
+
+    # On modifie la première convolution
+    old_conv_layer = model.conv1
+    new_conv_layer = nn.Conv2d(in_channels, old_conv_layer.out_channels,
+                               kernel_size=old_conv_layer.kernel_size,
+                               stride=old_conv_layer.stride,
+                               padding=old_conv_layer.padding,
+                               bias=False)
+
+    # On transfère les poids vers le nouveau modèle
+    with torch.no_grad():
+        new_conv_layer.weight[:, :3, :, :] = old_conv_layer.weight.clone()
+        mean_weights = torch.mean(old_conv_layer.weight, dim=1)
+        repeated_mean_weights = mean_weights.repeat(1, 1, 1, 1)
+        new_conv_layer.weight[:, 3, :, :] = repeated_mean_weights
+
+    model.conv1 = new_conv_layer
+
+    # Cette ligne enlève les deux dernières étapes (av. pooling et fully connected layers)
+    model = nn.Sequential(*list(model.children())[:-2])
+
+    return model
 
 class DeepLabV3(nn.Module):
-    def __init__(self, num_classes, in_channels=2):
+    def __init__(self, num_classes, in_channels=4):
         super(DeepLabV3, self).__init__()
 
-        # On a besoin d'un modèle backbone. J'ai réutilisé notre Unet, qui s'adapte bien à notre jeu
-        # de données
-        self.backbone = LightningUNet(4, 2)
+        # On a besoin d'un modèle backbone. J'ai utilisé Resnet
+        self.backbone = modify_resnet4channel(in_channels)
 
         # Atrous
-        self.aspp = ASPP(in_channels, 256)
+        self.aspp = ASPP(2048, 256)
 
         self.conv1 = nn.Conv2d(256, 256, 3, padding=1)
         self.conv2 = nn.Conv2d(256, num_classes, 1)
@@ -50,6 +76,7 @@ class DeepLabV3(nn.Module):
 
         x = self.conv1(x)
         x = F.relu(x)
+
         x = self.conv2(x)
 
         x = F.interpolate(x, scale_factor=16, mode='bilinear', align_corners=False)
@@ -59,7 +86,7 @@ class DeepLabV3(nn.Module):
 class LightningDeeplab(pl.LightningModule):
     def __init__(self, n_channels, n_classes, bilinear=True, learning_rate=1e-3):
         super().__init__()
-        self.model = DeepLabV3(n_classes)
+        self.model = DeepLabV3(n_classes, n_channels)
         self.n_channels = n_channels
         self.n_classes = n_classes
         self.bilinear = bilinear
