@@ -1,90 +1,65 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torchvision import models
 import pytorch_lightning as pl
 import torch.optim as optim
 import torchmetrics
+from src.models.unet import LightningUNet
 
 
-# MODÈLE UNET MAISON. LE UNET SE DIVISE EN TROIS PARTIES (DÉBUT, DOWN, UP).
-
-# Premières couches du modèle
-class DoubleConv(nn.Module):
-    """(convolution => [BN] => ReLU) * 2"""
-
-    def __init__(self, in_channels, out_channels, mid_channels=None):
-        super().__init__()
-        if not mid_channels:
-            mid_channels = out_channels
-        self.double_conv = nn.Sequential(
-            nn.Conv2d(in_channels, mid_channels, kernel_size=3, padding=1),
-            nn.BatchNorm2d(mid_channels),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(mid_channels, out_channels, kernel_size=3, padding=1),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True)
-        )
-
-    def forward(self, x):
-        return self.double_conv(x)
-
-
-# DESCENTE
-class Down(nn.Module):
-    """Downscaling with maxpool then double conv"""
-
+# MODELE DEEPLAB
+class ASPP(nn.Module):
     def __init__(self, in_channels, out_channels):
-        super().__init__()
-        self.maxpool_conv = nn.Sequential(
-            nn.MaxPool2d(2),
-            DoubleConv(in_channels, out_channels)
-        )
+        super(ASPP, self).__init__()
+        # Dilations par incrément de 6. On peut ajouter 24 dans la liste au besoin
+        self.dilations = [1, 6, 12, 18]
+        self.aspp_blocks = nn.ModuleList()
+
+        for dilation in self.dilations:
+            self.aspp_blocks.append(
+                nn.Conv2d(in_channels, out_channels, 3, padding=dilation, dilation=dilation)
+            )
+        self.output_conv = nn.Conv2d(len(self.dilations) * out_channels, out_channels, 1)
 
     def forward(self, x):
-        return self.maxpool_conv(x)
+        aspp_outputs = [block(x) for block in self.aspp_blocks]
+        x = torch.cat(aspp_outputs, dim=1)
+        x = self.output_conv(x)
+        return x
 
 
-# MONTÉE
-class Up(nn.Module):
-    """Upscaling then double conv"""
+class DeepLabV3(nn.Module):
+    def __init__(self, num_classes, in_channels=2):
+        super(DeepLabV3, self).__init__()
 
-    def __init__(self, in_channels, out_channels, bilinear=True):
-        super().__init__()
+        # On a besoin d'un modèle backbone. J'ai réutilisé notre Unet, qui s'adapte bien à notre jeu
+        # de données
+        self.backbone = LightningUNet(4, 2)
 
-        if bilinear:
-            self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
-            self.conv = DoubleConv(in_channels, out_channels, in_channels // 2)
-        else:
-            self.up = nn.ConvTranspose2d(in_channels, in_channels // 2, kernel_size=2, stride=2)
-            self.conv = DoubleConv(in_channels, out_channels)
+        # Atrous
+        self.aspp = ASPP(in_channels, 256)
 
-    def forward(self, x1, x2):
-        x1 = self.up(x1)
-
-        diffY = x2.size()[2] - x1.size()[2]
-        diffX = x2.size()[3] - x1.size()[3]
-
-        x1 = F.pad(x1, [diffX // 2, diffX - diffX // 2,
-                        diffY // 2, diffY - diffY // 2])
-
-        x = torch.cat([x2, x1], dim=1)
-        return self.conv(x)
-
-
-# LA SORTIE
-class OutConv(nn.Module):
-    def __init__(self, in_channels, out_channels):
-        super(OutConv, self).__init__()
-        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=1)
+        self.conv1 = nn.Conv2d(256, 256, 3, padding=1)
+        self.conv2 = nn.Conv2d(256, num_classes, 1)
 
     def forward(self, x):
-        return self.conv(x)
+        x = self.backbone(x)
+
+        x = self.aspp(x)
+
+        x = self.conv1(x)
+        x = F.relu(x)
+        x = self.conv2(x)
+
+        x = F.interpolate(x, scale_factor=16, mode='bilinear', align_corners=False)
+        return x
 
 
-# Wrap de Unets
-class LightningUNet(pl.LightningModule):
+class LightningDeeplab(pl.LightningModule):
     def __init__(self, n_channels, n_classes, bilinear=True, learning_rate=1e-3):
-        super(LightningUNet, self).__init__()
+        super().__init__()
+        self.model = DeepLabV3(n_classes)
         self.n_channels = n_channels
         self.n_classes = n_classes
         self.bilinear = bilinear
@@ -94,46 +69,24 @@ class LightningUNet(pl.LightningModule):
 
         self.train_jaccard = torchmetrics.JaccardIndex(num_classes=n_classes, task='binary')
         self.train_accuracy = torchmetrics.Accuracy(num_classes=n_classes, task='binary', average='macro')
-        
+
         self.val_jaccard = torchmetrics.JaccardIndex(num_classes=n_classes, task='binary')
         self.val_accuracy = torchmetrics.Accuracy(num_classes=n_classes, task='binary', average='macro')
-        
+
         self.test_jaccard = torchmetrics.JaccardIndex(num_classes=n_classes, task='binary')
         self.test_accuracy = torchmetrics.Accuracy(num_classes=n_classes, task='binary', average='macro')
 
-        # Architecture Unet
-        self.inc = DoubleConv(n_channels, 64)
-        self.down1 = Down(64, 128)
-        self.down2 = Down(128, 256)
-        self.down3 = Down(256, 512)
-        self.down4 = Down(512, 1024 // 2)
-        self.up1 = Up(1024, 512 // 2, bilinear)
-        self.up2 = Up(512, 256 // 2, bilinear)
-        self.up3 = Up(256, 128 // 2, bilinear)
-        self.up4 = Up(128, 64, bilinear)
-        self.outc = OutConv(64, n_classes)
-
     def forward(self, x):
-        x1 = self.inc(x)
-        x2 = self.down1(x1)
-        x3 = self.down2(x2)
-        x4 = self.down3(x3)
-        x5 = self.down4(x4)
-        x = self.up1(x5, x4)
-        x = self.up2(x, x3)
-        x = self.up3(x, x2)
-        x = self.up4(x, x1)
-        logits = self.outc(x)
-        return logits
+        return self.model(x)
 
     def training_step(self, batch, batch_idx):
         inputs, target = batch
         y_hat = self(inputs)
+        y_hat = F.interpolate(y_hat, size=target.size()[1:], mode='bilinear', align_corners=False)
         predicted_labels = torch.argmax(y_hat, dim=1)
 
         loss = self.compute_loss(y_hat, target)
         self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
-
 
         self.train_jaccard(predicted_labels, target)
         self.log('train_jaccard', self.train_jaccard, on_step=True, on_epoch=True, prog_bar=True, logger=True)
@@ -142,13 +95,14 @@ class LightningUNet(pl.LightningModule):
         self.log('train_accuracy', self.train_accuracy, on_step=True, on_epoch=True, prog_bar=True, logger=True)
 
         return loss
-    
+
     def compute_loss(self, y_hat, y):
         return F.cross_entropy(y_hat, y)
 
     def validation_step(self, batch, batch_idx, dataloader_idx=0):
         inputs, target = batch
         y_hat = self(inputs)
+        y_hat = F.interpolate(y_hat, size=target.size()[1:], mode='bilinear', align_corners=False)
         predicted_labels = torch.argmax(y_hat, dim=1)
 
         loss = self.compute_loss(y_hat, target)
@@ -163,6 +117,7 @@ class LightningUNet(pl.LightningModule):
     def test_step(self, batch, batch_idx):
         inputs, target = batch
         y_hat = self(inputs)
+        y_hat = F.interpolate(y_hat, size=target.size()[1:], mode='bilinear', align_corners=False)
         predicted_labels = torch.argmax(y_hat, dim=1)
 
         loss = self.compute_loss(y_hat, target)
