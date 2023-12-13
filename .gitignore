@@ -161,3 +161,4 @@ cython_debug/
 data/*
 !data/README.md
 code/logs/
+code/src/logs/

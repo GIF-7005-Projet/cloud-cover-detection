@@ -1,7 +1,7 @@
 from pathlib import Path
 
 
-def get_X_paths(features_folder_path: Path = Path('../data/final/public/train_features/')) -> list[list[Path]]:
+def get_X_paths(features_folder_path: Path = Path('../../data/final/public/train_features/')) -> list[list[Path]]:
     
     paths = []
     
@@ -18,7 +18,7 @@ def get_X_paths(features_folder_path: Path = Path('../data/final/public/train_fe
     return sorted(paths)
 
 
-def get_y_paths(labels_folder_path: Path = Path('../data/final/public/train_labels/')) -> list[list[Path]]:
+def get_y_paths(labels_folder_path: Path = Path('../../data/final/public/train_labels/')) -> list[list[Path]]:
     
     paths = []
     

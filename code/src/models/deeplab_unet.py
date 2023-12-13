@@ -1,11 +1,10 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torchvision import models
 import pytorch_lightning as pl
 import torch.optim as optim
 import torchmetrics
-from src.models.unet import LightningUNet
+from models.unet import LightningUNet
 
 
 # MODELE DEEPLAB
