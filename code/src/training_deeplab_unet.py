@@ -28,7 +28,7 @@ if __name__ == '__main__':
         run_name="deeplab_unet",
         model_version=0,
         data_module=data_module,
-        max_epochs=2,
+        max_epochs=35,
         patience=5
     )
 
