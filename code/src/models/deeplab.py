@@ -30,31 +30,26 @@ class ASPP(nn.Module):
 
         return x
 
-# Cette fonction vise à adapter le modèle Resnet pour 4 channels
+
 def modify_resnet4channel(in_channels=4):
     model = models.resnet50(pretrained=True)
 
-    # On modifie la première convolution
-    old_conv_layer = model.conv1
-    new_conv_layer = nn.Conv2d(in_channels, old_conv_layer.out_channels,
-                               kernel_size=old_conv_layer.kernel_size,
-                               stride=old_conv_layer.stride,
-                               padding=old_conv_layer.padding,
-                               bias=False)
+    original_resnet_conv1 = model.conv1
+    conv1_with_4_channels = nn.Conv2d(in_channels, original_resnet_conv1.out_channels,
+                                      kernel_size=original_resnet_conv1.kernel_size,
+                                      stride=original_resnet_conv1.stride,
+                                      padding=original_resnet_conv1.padding,
+                                      bias=False)
 
-    # On transfère les poids vers le nouveau modèle
     with torch.no_grad():
-        new_conv_layer.weight[:, :3, :, :] = old_conv_layer.weight.clone()
-        mean_weights = torch.mean(old_conv_layer.weight, dim=1)
-        repeated_mean_weights = mean_weights.repeat(1, 1, 1, 1)
-        new_conv_layer.weight[:, 3, :, :] = repeated_mean_weights
+        conv1_with_4_channels.weight[:, :3, :, :] = original_resnet_conv1.weight.clone()
 
-    model.conv1 = new_conv_layer
+    model.conv1 = conv1_with_4_channels
 
-    # Cette ligne enlève les deux dernières étapes (av. pooling et fully connected layers)
     model = nn.Sequential(*list(model.children())[:-2])
 
     return model
+
 
 class DeepLabV3(nn.Module):
     def __init__(self, num_classes, in_channels=4):
