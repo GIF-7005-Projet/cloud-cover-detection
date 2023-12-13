@@ -26,7 +26,7 @@ In many uses of multispectral satellite imagery, clouds obscure what we really c
 1. Copy & paste the path of your environment to the textbox in VSCode.
     - <img src="images/vscode_copy_path.png" width="800px"/>
 1. Press enter to confirm the path in VSCode.
-1. Open the `code/verify_setup.ipynb` notebook and click on "Select Kernel"
+1. Open the `code/src/verify_setup.ipynb` notebook and click on "Select Kernel"
     - <img src="images/vscode_select_kernel.png" width="800px"/>
 1. Click on "Python Environments..."
     - <img src="images/vscode_python_env.png" width="800px"/>

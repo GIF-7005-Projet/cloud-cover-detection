@@ -1,12 +1,12 @@
 import pytorch_lightning as pl
 from pathlib import Path
-from src.datasets.imageio import get_X_paths, get_y_paths
-from src.datasets.dataset import CloudCoverDataset
+from datasets.imageio import get_X_paths, get_y_paths
+from datasets.dataset import CloudCoverDataset
 from torch.utils.data import DataLoader
 from sklearn.model_selection import train_test_split
 from typing import Optional
 from torchvision.transforms import v2
-from src.datasets.transforms.minmax_normalize import MinMaxNormalize
+from datasets.transforms.minmax_normalize import MinMaxNormalize
 
 
 # TODO Change default mean and std for infrared channel (these are just filler values)
