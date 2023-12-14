@@ -25,7 +25,7 @@ if __name__ == '__main__':
 
     deeplab = train(
         model=LightningDeeplab(n_channels=4, n_classes=2, bilinear=True, learning_rate=0.001),
-        run_name="deeplab_resnet",
+        run_name="deeplab_resnet_updated_mean",
         model_version=0,
         data_module=data_module,
         max_epochs=35,
@@ -34,7 +34,7 @@ if __name__ == '__main__':
 
     test(
         model=deeplab,
-        run_name="deeplab_resnet",
+        run_name="deeplab_resnet_updated_mean",
         model_version=0,
         data_module=data_module
     )

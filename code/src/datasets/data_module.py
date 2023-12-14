@@ -26,11 +26,11 @@ class CloudCoverDataModule(pl.LightningDataModule):
                 v2.RandomHorizontalFlip(p=0.5),
                 v2.RandomVerticalFlip(p=0.5),
                 v2.RandomRotation(degrees=90),
-                v2.Normalize(mean=[0.485, 0.456, 0.406, 0.5], std=[0.229, 0.224, 0.225, 0.5])
+                v2.Normalize(mean=[0.485, 0.456, 0.406, 0.3568], std=[0.229, 0.224, 0.225, 0.2076])
             ]),
             eval_transforms: v2.Compose = v2.Compose([
                 MinMaxNormalize(0, 1),
-                v2.Normalize(mean=[0.485, 0.456, 0.406, 0.5], std=[0.229, 0.224, 0.225, 0.5])
+                v2.Normalize(mean=[0.485, 0.456, 0.406, 0.3568], std=[0.229, 0.224, 0.225, 0.2076])
             ]),
             random_state: int = 42
         ):
