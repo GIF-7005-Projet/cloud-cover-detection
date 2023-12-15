@@ -1,7 +1,13 @@
 from models.segformer.lightning_module import LightningSegFormer
 
 
-def create_b0_model(image_size: int, num_classes: int, in_channels: int, learning_rate: float) -> LightningSegFormer:
+def create_b0_model(
+    image_size: int, 
+    num_classes: int, 
+    in_channels: int, 
+    learning_rate: float,
+    max_epochs: int
+) -> LightningSegFormer:
     return LightningSegFormer(
         image_size = image_size,
         n_classes = num_classes,
@@ -14,11 +20,18 @@ def create_b0_model(image_size: int, num_classes: int, in_channels: int, learnin
         encoder_dropout = 0.,
         decoder_embedding_dim = 256,
         decoder_dropout = 0.,
-        learning_rate = learning_rate
+        learning_rate = learning_rate,
+        max_epochs = max_epochs
     )
 
 
-def create_b1_model(image_size: int, num_classes: int, in_channels: int, learning_rate: float) -> LightningSegFormer:
+def create_b1_model(
+    image_size: int, 
+    num_classes: int, 
+    in_channels: int, 
+    learning_rate: float,
+    max_epochs: int
+) -> LightningSegFormer:
     return LightningSegFormer(
         image_size = image_size,
         n_classes = num_classes,
@@ -31,11 +44,18 @@ def create_b1_model(image_size: int, num_classes: int, in_channels: int, learnin
         encoder_dropout = 0.,
         decoder_embedding_dim = 256,
         decoder_dropout = 0.,
-        learning_rate = learning_rate
+        learning_rate = learning_rate,
+        max_epochs = max_epochs
     )
 
 
-def create_b2_model(image_size: int, num_classes: int, in_channels: int, learning_rate: float) -> LightningSegFormer:
+def create_b2_model(
+    image_size: int, 
+    num_classes: int, 
+    in_channels: int, 
+    learning_rate: float,
+    max_epochs: int
+) -> LightningSegFormer:
     return LightningSegFormer(
         image_size = image_size,
         n_classes = num_classes,
@@ -48,11 +68,18 @@ def create_b2_model(image_size: int, num_classes: int, in_channels: int, learnin
         encoder_dropout = 0.,
         decoder_embedding_dim = 768,
         decoder_dropout = 0.,
-        learning_rate = learning_rate
+        learning_rate = learning_rate,
+        max_epochs = max_epochs
     )
 
 
-def create_b3_model(image_size: int, num_classes: int, in_channels: int, learning_rate: float) -> LightningSegFormer:
+def create_b3_model(
+    image_size: int, 
+    num_classes: int, 
+    in_channels: int, 
+    learning_rate: float,
+    max_epochs: int
+) -> LightningSegFormer:
     return LightningSegFormer(
         image_size = image_size,
         n_classes = num_classes,
@@ -65,11 +92,18 @@ def create_b3_model(image_size: int, num_classes: int, in_channels: int, learnin
         encoder_dropout = 0.,
         decoder_embedding_dim = 768,
         decoder_dropout = 0.,
-        learning_rate = learning_rate
+        learning_rate = learning_rate,
+        max_epochs = max_epochs
     )
 
 
-def create_b4_model(image_size: int, num_classes: int, in_channels: int, learning_rate: float) -> LightningSegFormer:
+def create_b4_model(
+    image_size: int, 
+    num_classes: int, 
+    in_channels: int, 
+    learning_rate: float,
+    max_epochs: int
+) -> LightningSegFormer:
     return LightningSegFormer(
         image_size = image_size,
         n_classes = num_classes,
@@ -82,11 +116,18 @@ def create_b4_model(image_size: int, num_classes: int, in_channels: int, learnin
         encoder_dropout = 0.,
         decoder_embedding_dim = 768,
         decoder_dropout = 0.,
-        learning_rate = learning_rate
+        learning_rate = learning_rate,
+        max_epochs = max_epochs
     )
 
 
-def create_b5_model(image_size: int, num_classes: int, in_channels: int, learning_rate: float) -> LightningSegFormer:
+def create_b5_model(
+    image_size: int, 
+    num_classes: int, 
+    in_channels: int, 
+    learning_rate: float,
+    max_epochs: int
+) -> LightningSegFormer:
     return LightningSegFormer(
         image_size = image_size,
         n_classes = num_classes,
@@ -99,5 +140,6 @@ def create_b5_model(image_size: int, num_classes: int, in_channels: int, learnin
         encoder_dropout = 0.,
         decoder_embedding_dim = 768,
         decoder_dropout = 0.,
-        learning_rate = learning_rate
+        learning_rate = learning_rate,
+        max_epochs = max_epochs
     )

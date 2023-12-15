@@ -1,5 +1,4 @@
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
 import torch.optim as optim
@@ -22,7 +21,8 @@ class LightningSegFormer(pl.LightningModule):
         encoder_dropout: float = 0.,
         decoder_embedding_dim: int = 256,
         decoder_dropout: float = 0.,
-        learning_rate=6e-5
+        learning_rate = 6e-5,
+        max_epochs: int = 20
     ):
         super().__init__()
         self.model = SegFormer(
@@ -47,6 +47,7 @@ class LightningSegFormer(pl.LightningModule):
         self.decoder_embedding_dim = decoder_embedding_dim
         self.decoder_dropout = decoder_dropout
         self.learning_rate = learning_rate
+        self.max_epochs = max_epochs
 
         self.save_hyperparameters()
 
@@ -61,7 +62,7 @@ class LightningSegFormer(pl.LightningModule):
 
     def forward(self, x):
         return self.model(x)
-
+    
     def training_step(self, batch, batch_idx):
         inputs, target = batch
         y_hat = self(inputs)
@@ -88,13 +89,14 @@ class LightningSegFormer(pl.LightningModule):
 
         loss = self.compute_loss(y_hat, target)
         self.log('val_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
-
+        self.log("hp_metric", loss)
+        
         self.val_jaccard(predicted_labels, target)
         self.log('val_jaccard', self.val_jaccard, on_step=True, on_epoch=True, prog_bar=True, logger=True)
-
+        
         self.val_accuracy(predicted_labels, target)
         self.log('val_accuracy', self.val_accuracy, on_step=True, on_epoch=True, prog_bar=True, logger=True)
-
+        
     def test_step(self, batch, batch_idx):
         inputs, target = batch
         y_hat = self(inputs)
@@ -111,5 +113,5 @@ class LightningSegFormer(pl.LightningModule):
 
     def configure_optimizers(self):
         optimizer = optim.AdamW(self.parameters(), lr=self.learning_rate)
-        scheduler = PolynomialLR(optimizer, power=1.0, verbose=True)
+        scheduler = PolynomialLR(optimizer, total_iters=self.max_epochs, power=1.0, verbose=True)
         return {"optimizer": optimizer, "lr_scheduler": {"scheduler": scheduler, "interval": "epoch"}}

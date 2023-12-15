@@ -11,6 +11,9 @@ from models.segformer.model_factory import (
 from training.trainer import train
 from testing.tester import test
 
+MAX_EPOCHS = 20
+PATIENCE = 10
+LR = 6e-5
 
 if __name__ == '__main__':
     data_module = CloudCoverDataModule(
@@ -34,7 +37,8 @@ if __name__ == '__main__':
         image_size=512,
         num_classes=2,
         in_channels=4,
-        learning_rate=6e-3
+        learning_rate=LR,
+        max_epochs=MAX_EPOCHS
     )
 
     segformer = train(
@@ -42,8 +46,9 @@ if __name__ == '__main__':
         run_name="segformer_b0",
         model_version=0,
         data_module=data_module,
-        max_epochs=20,
-        patience=10
+        max_epochs=MAX_EPOCHS,
+        patience=PATIENCE,
+        monitor_lr=True
     )
 
     test(
