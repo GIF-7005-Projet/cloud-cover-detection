@@ -4,7 +4,9 @@ from models.segformer.encoders.mix_vision_transformer_encoder import MixVisionTr
 from models.segformer.decoders.semantic_segmentation_head import SegFormerSemanticSegmentationHead
 from models.segformer.resize import resize
 
-
+"""
+Inspired by https://github.com/NVlabs/SegFormer
+"""
 class SegFormer(nn.Module):
     def __init__(
         self,
