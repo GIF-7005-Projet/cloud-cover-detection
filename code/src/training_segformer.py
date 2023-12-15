@@ -1,6 +1,13 @@
 from datasets.data_module import CloudCoverDataModule
 from pathlib import Path
-from models.segformer.lightning_module import LightningSegFormer
+from models.segformer.model_factory import (
+    create_b0_model,
+    create_b1_model,
+    create_b2_model,
+    create_b3_model,
+    create_b4_model,
+    create_b5_model
+)
 from training.trainer import train
 from testing.tester import test
 
@@ -22,28 +29,25 @@ if __name__ == '__main__':
 
     data_module.setup(stage="fit")
     data_module.setup(stage="test")
+    
+    segformer = create_b0_model(
+        image_size=512,
+        num_classes=2,
+        in_channels=4,
+        learning_rate=6e-5
+    )
 
-    deeplab = train(
-        model=LightningSegFormer(
-            image_size=512,
-            n_classes=2,
-            in_channels=4,
-            encoder_embedding_dims=[32, 64, 160, 256],
-            encoder_reduction_ratios=[8, 4, 2, 1],
-            encoder_num_heads=[1, 2, 5, 8],
-            encoder_stages_layers=[2, 2, 2, 2],
-            decoder_embedding_dim=256,
-            learning_rate=1e-3
-        ),
+    segformer = train(
+        model=segformer,
         run_name="segformer_b0",
         model_version=0,
         data_module=data_module,
-        max_epochs=2,
+        max_epochs=100,
         patience=10
     )
 
     test(
-        model=deeplab,
+        model=segformer,
         run_name="segformer_b0",
         model_version=0,
         data_module=data_module

@@ -15,7 +15,10 @@ class SegFormer(nn.Module):
         encoder_reduction_ratios: list = [8, 4, 2, 1],
         encoder_num_heads: list = [1, 2, 5, 8],
         encoder_stages_layers: list = [2, 2, 2, 2],
+        encoder_qkv_bias: bool = True,
+        encoder_dropout: float = 0.,
         decoder_embedding_dim: int = 256,
+        decoder_dropout: float = 0.
     ):
         super().__init__()
         self.image_size = image_size
@@ -24,7 +27,10 @@ class SegFormer(nn.Module):
         self.encoder_embedding_dims = encoder_embedding_dims
         self.encoder_reduction_ratios = encoder_reduction_ratios
         self.encoder_num_heads = encoder_num_heads
+        self.encoder_qkv_bias = encoder_qkv_bias
+        self.encoder_dropout = encoder_dropout
         self.decoder_embedding_dim = decoder_embedding_dim
+        self.decoder_dropout = decoder_dropout
         
         self.encoder = MixVisionTransformerEncoder(image_size=image_size,
                                                    in_channels=in_channels,
@@ -32,9 +38,9 @@ class SegFormer(nn.Module):
                                                    embedding_dims=encoder_embedding_dims,
                                                    num_heads=encoder_num_heads,
                                                    mlp_ratios=[4, 4, 4, 4],
-                                                   qkv_bias=False,
-                                                   attention_dropout=0.5,
-                                                   dropout=0.5,
+                                                   qkv_bias=encoder_qkv_bias,
+                                                   attention_dropout=encoder_dropout,
+                                                   dropout=encoder_dropout,
                                                    reduction_ratios=encoder_reduction_ratios,
                                                    encoder_stages_layers=encoder_stages_layers)
         
@@ -44,7 +50,7 @@ class SegFormer(nn.Module):
                                                          c4_in_channels=encoder_embedding_dims[3],
                                                          num_classes=num_classes,
                                                          embedding_dim=decoder_embedding_dim,
-                                                         dropout=0.5)
+                                                         dropout=decoder_dropout)
         
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.encoder(x)

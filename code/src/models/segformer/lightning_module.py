@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import pytorch_lightning as pl
 import torch.optim as optim
 import torchmetrics
+from torch.optim.lr_scheduler import PolynomialLR
 from models.segformer.model import SegFormer
 
 
@@ -17,7 +18,10 @@ class LightningSegFormer(pl.LightningModule):
         encoder_reduction_ratios: list = [8, 4, 2, 1],
         encoder_num_heads: list = [1, 2, 5, 8],
         encoder_stages_layers: list = [2, 2, 2, 2],
+        encoder_qkv_bias: bool = True,
+        encoder_dropout: float = 0.,
         decoder_embedding_dim: int = 256,
+        decoder_dropout: float = 0.,
         learning_rate=6e-5
     ):
         super().__init__()
@@ -38,7 +42,10 @@ class LightningSegFormer(pl.LightningModule):
         self.encoder_reduction_ratios = encoder_reduction_ratios
         self.encoder_num_heads = encoder_num_heads
         self.encoder_stages_layers = encoder_stages_layers
+        self.encoder_qkv_bias = encoder_qkv_bias
+        self.encoder_dropout = encoder_dropout
         self.decoder_embedding_dim = decoder_embedding_dim
+        self.decoder_dropout = decoder_dropout
         self.learning_rate = learning_rate
 
         self.save_hyperparameters()
@@ -104,4 +111,5 @@ class LightningSegFormer(pl.LightningModule):
 
     def configure_optimizers(self):
         optimizer = optim.AdamW(self.parameters(), lr=self.learning_rate)
-        return optimizer
+        scheduler = PolynomialLR(optimizer, power=1.0, verbose=True)
+        return {"optimizer": optimizer, "lr_scheduler": {"scheduler": scheduler, "interval": "epoch"}}
