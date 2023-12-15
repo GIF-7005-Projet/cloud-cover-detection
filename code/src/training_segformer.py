@@ -18,9 +18,9 @@ if __name__ == '__main__':
         train_y_folder_path=Path("../../data/final/public/train_labels/"),
         test_X_folder_path=Path("../../data/final/private/test_features/"),
         test_y_folder_path=Path("../../data/final/private/test_labels/"),
-        train_batch_size=8,
-        val_batch_size=16,
-        test_batch_size=16,
+        train_batch_size=16,
+        val_batch_size=32,
+        test_batch_size=32,
         val_size=0.2,
         random_state=42
     )
@@ -34,7 +34,7 @@ if __name__ == '__main__':
         image_size=512,
         num_classes=2,
         in_channels=4,
-        learning_rate=6e-5
+        learning_rate=6e-3
     )
 
     segformer = train(
@@ -42,7 +42,7 @@ if __name__ == '__main__':
         run_name="segformer_b0",
         model_version=0,
         data_module=data_module,
-        max_epochs=100,
+        max_epochs=20,
         patience=10
     )
 
