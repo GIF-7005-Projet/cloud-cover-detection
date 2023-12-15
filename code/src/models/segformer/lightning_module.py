@@ -13,8 +13,11 @@ class LightningSegFormer(pl.LightningModule):
         image_size: int = 512,
         n_classes: int = 1,
         in_channels: int = 4,
-        encoder_embedding_dims: list = [64, 128, 256, 512],
-        decoder_embedding_dim: int = 768,
+        encoder_embedding_dims: list = [32, 64, 160, 256],
+        encoder_reduction_ratios: list = [8, 4, 2, 1],
+        encoder_num_heads: list = [1, 2, 5, 8],
+        encoder_stages_layers: list = [2, 2, 2, 2],
+        decoder_embedding_dim: int = 256,
         learning_rate=6e-5
     ):
         super().__init__()
@@ -23,12 +26,18 @@ class LightningSegFormer(pl.LightningModule):
             num_classes=n_classes,
             in_channels=in_channels,
             encoder_embedding_dims=encoder_embedding_dims,
+            encoder_reduction_ratios=encoder_reduction_ratios,
+            encoder_num_heads=encoder_num_heads,
+            encoder_stages_layers=encoder_stages_layers,
             decoder_embedding_dim=decoder_embedding_dim
         )
         self.image_size = image_size
         self.n_classes = n_classes
         self.in_channels = in_channels
         self.encoder_embedding_dims = encoder_embedding_dims
+        self.encoder_reduction_ratios = encoder_reduction_ratios
+        self.encoder_num_heads = encoder_num_heads
+        self.encoder_stages_layers = encoder_stages_layers
         self.decoder_embedding_dim = decoder_embedding_dim
         self.learning_rate = learning_rate
 

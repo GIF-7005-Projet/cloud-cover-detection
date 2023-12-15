@@ -17,11 +17,11 @@ class MixVisionTransformerEncoder(nn.Module):
         attention_dropout: float = 0.,
         dropout: float = 0.,
         reduction_ratios: list = [8, 4, 2, 1],
-        depths: list = [3, 4, 6, 3]
+        encoder_stages_layers: list = [3, 4, 6, 3]
     ):
         super().__init__()
         self.num_classes = num_classes
-        self.depths = depths
+        self.encoder_stages_layers = encoder_stages_layers
         
         self.patch_embed1 = OverlapPatchEmbeddings(image_size=image_size,
                                                    patch_size=7,
@@ -54,7 +54,7 @@ class MixVisionTransformerEncoder(nn.Module):
                              qkv_bias=qkv_bias,
                              attention_dropout=attention_dropout,
                              dropout=dropout,
-                             reduction_ratio=reduction_ratios[0]) for _ in range(depths[0])
+                             reduction_ratio=reduction_ratios[0]) for _ in range(encoder_stages_layers[0])
         ])
         self.norm1 = nn.LayerNorm(normalized_shape=embedding_dims[0])
         
@@ -65,7 +65,7 @@ class MixVisionTransformerEncoder(nn.Module):
                              qkv_bias=qkv_bias,
                              attention_dropout=attention_dropout,
                              dropout=dropout,
-                             reduction_ratio=reduction_ratios[1]) for _ in range(depths[1])
+                             reduction_ratio=reduction_ratios[1]) for _ in range(encoder_stages_layers[1])
         ])
         self.norm2 = nn.LayerNorm(normalized_shape=embedding_dims[1])
         
@@ -76,7 +76,7 @@ class MixVisionTransformerEncoder(nn.Module):
                              qkv_bias=qkv_bias,
                              attention_dropout=attention_dropout,
                              dropout=dropout,
-                             reduction_ratio=reduction_ratios[2]) for _ in range(depths[2])
+                             reduction_ratio=reduction_ratios[2]) for _ in range(encoder_stages_layers[2])
         ])
         self.norm3 = nn.LayerNorm(normalized_shape=embedding_dims[2])
         
@@ -87,7 +87,7 @@ class MixVisionTransformerEncoder(nn.Module):
                              qkv_bias=qkv_bias,
                              attention_dropout=attention_dropout,
                              dropout=dropout,
-                             reduction_ratio=reduction_ratios[3]) for _ in range(depths[3])
+                             reduction_ratio=reduction_ratios[3]) for _ in range(encoder_stages_layers[3])
         ])
         self.norm4 = nn.LayerNorm(normalized_shape=embedding_dims[3])
     
